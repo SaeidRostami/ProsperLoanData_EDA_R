@@ -1,0 +1,400 @@
+"Prosper Loan Data Exploration"
+Saeid Rostami
+========================================================
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(lubridate)
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+prosper_data <- read.csv("prosperLoanData.csv")
+```
+
+# Summary of Data
+```{r echo=FALSE}
+nrow(prosper_data)
+ncol(prosper_data)
+```
+Prosper which was founded in 2005 is a peer-to-peer lending platform that people can invest in each other. Prosper connects people who need money with those who have money to invest. Prosper loan data contain 113,937 rows with 81 columns. 
+
+```{r echo=FALSE}
+names(prosper_data)
+```
+# Creating new dataframe based on prosper data
+```{r echo=FALSE}
+#  Payment history columns
+df <- prosper_data[, c("DelinquenciesLast7Years", "PublicRecordsLast10Years")]
+
+# Length of credit history columns
+today <- Sys.Date()
+df$DaysWithCreditLine <- as.numeric(
+  floor(
+    difftime(today,
+             as.Date(prosper_data$FirstRecordedCreditLine,
+                     "%Y-%m-%d %H:%M:%S")
+            )
+    )
+  )
+
+
+
+
+
+
+# Recent searches
+df$InquiriesLast6Months <- prosper$InquiriesLast6Months 
+
+# Rate, Terms, Score and Listing creation date
+df$BorrowerRate <- prosper_data$BorrowerRate
+df$Term <- factor(prosper_data$Term)
+df$ProsperRating <- factor(prosper_data$ProsperRating..Alpha., levels = c("AA", "A", "B", "C", "D", "E", "HR"))
+df$ListingCreationDate <- prosper_data$ListingCreationDate
+
+# Amount, employment status and listing category 
+df$LoanOriginalAmount <- prosper$LoanOriginalAmount
+df$ListingCategory <- factor(prosper$ListingCategory..numeric.,
+                             labels=c("Not available", "Debt consolidation",
+                                      "Home improvement", "Business",
+                                      "Personal loan", "Student use",
+                                      "Auto", "Other", "Baby & Adoption Loans",
+                                      "Boat", "Cosmetic Procedures", 
+                                      "Engagement Ring Financing",
+                                      "Green Loans", "Household Expenses",
+                                      "Large Purchases", "Medical/Dental",
+                                      "Motorcycle", "RV", "Taxes",
+                                      "Vacation", "Wedding Loans"))
+df$EmploymentStatus <- prosper$EmploymentStatus
+df$AnnualIncome <- prosper$StatedMonthlyIncome * 12
+
+df$RevolvingCreditBalance <- prosper_data$RevolvingCreditBalance
+
+str(df)
+
+
+```
+```{r echo=FALSE}
+summary(df)
+
+```
+
+
+# Univariate Plots Section
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plots}
+ggplot(data = df) +
+  geom_histogram(aes(x = LoanOriginalAmount),binwidth=700) +
+  scale_x_continuous(
+    limits = c(0, quantile(df$LoanOriginalAmount, 0.99, na.rm = TRUE)),
+    breaks = seq(0, quantile(df$LoanOriginalAmount, 0.99, na.rm = TRUE), 1000)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+From the figure above we can see the amont of money that people borrow and as we can see people tend to borrow in whole numbers. 
+
+```{r echo= FALSE, warning= FALSE}
+summary(df$LoanOriginalAmount)
+
+```
+The minimum money that people borrowed is 1000 as opposed to maximum, which is 35000. the median and mean are 6500 and 8337 respectively. 
+
+## Loan category
+```{r echo= FALSE, warning= FALSE}
+ggplot(data = df) +
+  geom_bar(aes(x = ListingCategory)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Sounds like most people borrow to cover their debts. 
+
+## Employment status 
+```{r echo=FALSE, warning=FALSE}
+ggplot( data = df) +
+  geom_bar(aes(x = EmploymentStatus)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+As we can see most of the borrowers are employed. 
+
+## Income status
+```{r echo=FALSE, warning=FALSE}
+
+ggplot( data = df) +
+  geom_histogram(aes(x = AnnualIncome),binwidth = 2000) +
+    scale_x_continuous(
+      limits = c(0, quantile(df$AnnualIncome, 0.99, na.rm = TRUE)),
+      breaks = seq(0, quantile(df$AnnualIncome, 0.99, na.rm = TRUE), 10000)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+```{r echo=FALSE, warning= FALSE}
+summary(df$AnnualIncome)
+```
+The majority of income are between 20000 and 90000 annually. The median is 56000 and the mean is 67296.
+
+## Payment history
+
+```{r echo= FALSE, warning=FALSE}
+plot1 <- ggplot(data = df) +
+  geom_histogram(aes(x = DelinquenciesLast7Years),,binwidth = 1) +
+  scale_x_continuous(
+    limits = c(0, quantile(df$DelinquenciesLast7Years, 0.99, na.rm = TRUE)),
+    breaks = seq(0, quantile(df$DelinquenciesLast7Years, 0.99, na.rm = TRUE), 5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  coord_cartesian(ylim  = c(0,4000))
+
+
+plot2 <- ggplot( data = df) +
+  geom_histogram(aes(x = PublicRecordsLast10Years),binwidth = 1) +
+  scale_x_continuous(
+    limits = c(0, quantile(df$PublicRecordsLast10Years, 0.99, na.rm = TRUE)),
+    breaks = seq(0, quantile(df$PublicRecordsLast10Years, 0.99, na.rm = TRUE), 1)) +
+  coord_cartesian(ylim  = c(0,25000),xlim = c(0,5))
+
+grid.arrange(plot1, plot2, nrow = 2)
+```
+
+```{r echo=FALSE, warning=FALSE}
+summary(df$DelinquenciesLast7Years)
+```
+```{r echo=FALSE, warning=FALSE}
+summary(df$PublicRecordsLast10Years)
+```
+It is obvious that most of the borrower have zero or one deliquencies in the last 7 years. Similarly they have zero or one public records  in the last 10 years.
+
+
+## Revolving Credit Balance
+```{r echo=FALSE, warning=FALSE}
+ggplot( data = df) +
+  geom_histogram(aes(x = RevolvingCreditBalance),binwidth = 7000) +
+  scale_x_continuous(
+    limits = c(0, quantile(df$RevolvingCreditBalance, 0.99, na.rm = TRUE)),
+    breaks = seq(0, quantile(df$RevolvingCreditBalance, 0.99, na.rm = TRUE), 10000)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r echo=FALSE, warning=FALSE}
+summary(df$RevolvingCreditBalance)
+```
+Revolving Credit Balance is the total outstanding balance that the borrower owes on his/her credit accounts. The median and mean are 8549 and  17600 respectively and the most common amount is 0.
+
+## Length of credit history
+
+```{r echo=FALSE, warning=FALSE}
+plot1 <- ggplot(data = df) +
+  geom_histogram(aes(x = DaysWithCreditLine), binwidth = 100) 
+plot2 <- ggplot(data = df) +
+  geom_histogram(aes(x = DaysWithCreditLine / 365),binwidth = 5, label="Years with credit line") 
+grid.arrange(plot1, plot2)
+```
+
+here is a credit line stors the credit story of 60 years.
+
+
+## Rating
+```{r echo=FALSE, warning=FALSE}
+ggplot(data = df) +
+  geom_bar(aes(x = ProsperRating))
+```
+The most common rating is C follows by B. A and D are at the next steps (excluding the NA). 
+
+
+## Loan length
+```{r echo=FALSE, warning=FALSE}
+ggplot(data = df) +
+  geom_bar(aes(x = Term))
+```
+
+Most loans have 36 months terms
+
+```{r echo=FALSE, warning=FALSE}
+ggplot(data = df, binwidth = 1) +
+  geom_histogram(aes(x = BorrowerRate * 100))
+```
+```{r echo=FALSE, warning=FALSE}
+summary(df$BorrowerRate)
+```
+
+The median and mean for the borrower rate are 18.4% and 19.28% respectively, and The maximum borrower rate is 0.4975 or 49.75%.
+
+## Years borrowing
+```{r echo=FALSE, warning=FALSE}
+df$ListingCreationYear <- year(prosper_data$ListingCreationDate)
+df$ListingCreationYear <- as.factor(df$ListingCreationYear )
+
+ggplot( data = df) + 
+  geom_bar(aes(x = ListingCreationYear)) +  
+  ggtitle("Loan Origination by Year") +
+  xlab("Loan Creation Year")
+```
+2013 is the year that people borrowed money more than any other years and 2009 is the minimum borrowing year. There can be many resons behind that like economic crises or elections. 
+
+
+```{r echo=FALSE, warning=FALSE}
+df$EmploymentStatusDuration = prosper_data$EmploymentStatusDuration
+
+ggplot(data = df) + 
+  geom_histogram(aes(x = EmploymentStatusDuration/12), binwidth=2) +
+  ggtitle("Employment Duration of the borrowers") +
+  xlab("Employment duration (years)") +
+  theme(text = element_text(size=12))
+
+```
+With the increase of the length of employment there is a decreas in the number of people who borrow loans. 
+
+```{r}
+groupByBorrowerState <- group_by(prosper_data, BorrowerState)
+borrowersByState <- summarise(groupByBorrowerState, count = n())
+borrowersByState <- borrowersByState[order(-borrowersByState$count),]
+states <- unique((head(borrowersByState, 11))$BorrowerState)
+top10States <- subset(prosper_data,  (BorrowerState %in% states))
+
+ggplot( data = subset(top10States, BorrowerState != '')) + 
+  geom_bar(aes(x = BorrowerState)) +
+  ggtitle("TOP 10 States") +
+  theme(text = element_text(size=10)) +
+  xlab("Borrower State")
+```
+As we can see California is the state that people were more likely to loan and Florida, Illinois, New York and Texas are at the next steps.
+
+
+
+# Univariate Analysis
+
+
+### What is the structure of your dataset?
+
+For the purpose of this project I am using the Prosper data set, which contains all Prosper loans created until March 11th, 2014. There are discrete and continuous variables in this dataset.Each variable is a column and each row is an observation. 
+
+
+### What is/are the main feature(s) of interest in your dataset?
+
+- DelinquenciesLast7Years 
+- PublicRecordsLast10Years
+- DebtToIncomeRatio       
+- RevolvingCreditBalance  
+- DaysWithCreditLine      
+- LoanOriginalAmount      
+- ListingCategory         
+- EmploymentStatus        
+- AnnualIncome            
+- BorrowerRate            
+- Term                    
+- ProsperRating 
+- Listing Creation Date
+
+### What other features in the dataset do you think will help support your \
+investigation into your feature(s) of interest?
+
+Other variables that help me in my investigation are Employment Duration, 
+Debt To Income Ratio, Prosper Rating and Occupation.
+
+
+### Did you create any new variables from existing variables in the dataset?
+
+I created following new variables during the analysis: ListingCretionYear and Days with credit line.
+
+### Of the features you investigated, were there any unusual distributions? \
+Did you perform any operations on the data to tidy, adjust, or change the form \
+of the data? If so, why did you do this?
+
+I set ListingCreationYear variable as a factor so when I plotted it would look discrete. I've alose taked care of ranked variables order in top 10 loan states. 
+
+# Bivariate Plots Section
+
+> **Tip**: Based on what you saw in the univariate plots, what relationships
+between variables might be interesting to look at in this section? Don't limit
+yourself to relationships between a main output feature and one of the
+supporting variables. Try to look at relationships between supporting variables
+as well.
+
+```{r echo=FALSE, Bivariate_Plots}
+
+```
+
+# Bivariate Analysis
+
+> **Tip**: As before, summarize what you found in your bivariate explorations
+here. Use the questions below to guide your discussion.
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. How did the feature(s) of interest vary with other features in \
+the dataset?
+
+### Did you observe any interesting relationships between the other features \
+(not the main feature(s) of interest)?
+
+### What was the strongest relationship you found?
+
+
+# Multivariate Plots Section
+
+> **Tip**: Now it's time to put everything together. Based on what you found in
+the bivariate plots section, create a few multivariate plots to investigate
+more complex interactions between variables. Make sure that the plots that you
+create here are justified by the plots you explored in the previous section. If
+you plan on creating any mathematical models, this is the section where you
+will do that.
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. Were there features that strengthened each other in terms of \
+looking at your feature(s) of interest?
+
+### Were there any interesting or surprising interactions between features?
+
+### OPTIONAL: Did you create any models with your dataset? Discuss the \
+strengths and limitations of your model.
+
+------
+
+# Final Plots and Summary
+
+> **Tip**: You've done a lot of exploration and have built up an understanding
+of the structure of and relationships between the variables in your dataset.
+Here, you will select three plots from all of your previous exploration to
+present here as a summary of some of your most interesting findings. Make sure
+that you have refined your selected plots for good titling, axis labels (with
+units), and good aesthetic choices (e.g. color, transparency). After each plot,
+make sure you justify why you chose each plot by describing what it shows.
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+
+```
+
+### Description One
+
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+
+```
+
+### Description Two
+
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+
+```
+
+### Description Three
+
+------
+
+# Reflection
+
+> **Tip**: Here's the final step! Reflect on the exploration you performed and
+the insights you found. What were some of the struggles that you went through?
+What went well? What was surprising? Make sure you include an insight into
+future work that could be done with the dataset.
+
+> **Tip**: Don't forget to remove this, and the other **Tip** sections before
+saving your final work and knitting the final report!
