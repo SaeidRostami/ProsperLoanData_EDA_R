@@ -311,15 +311,211 @@ I set ListingCreationYear variable as a factor so when I plotted it would look d
 
 # Bivariate Plots Section
 
-> **Tip**: Based on what you saw in the univariate plots, what relationships
-between variables might be interesting to look at in this section? Don't limit
-yourself to relationships between a main output feature and one of the
-supporting variables. Try to look at relationships between supporting variables
-as well.
+## The relationship between Loan Original Amount and Number of 
+Investors
 
-```{r echo=FALSE, Bivariate_Plots}
+```{r echo=FALSE,warning=FALSE}
+df$Investors = prosper_data$Investors
+ggplot( data = df) + 
+  geom_point(aes(x = LoanOriginalAmount, y = Investors),alpha = 1/20) +
+ 
+  ggtitle("Loan Original Amount vs Number of Investors") +
+  xlab("Loan Original Amount")
+```
+
+As we can see larger loans have more investors.
+
+## Borrowed loan amount vary trought the years
+
+```{r echo=FALSE, warning=FALSE}
+ggplot(data=df) +
+    geom_boxplot(aes(x=as.character(ListingCreationYear), y=LoanOriginalAmount)) +
+  ggtitle("Listing Creation Year vs Loan Original Amount") +
+  xlab("Listing Creation Year") +
+  ylab("Loan Original Amount")
+```
+
+Mean loans amounts wen up slowly from 2005 to 2007, then it decreased at 2008 and went down to his minimum value at 2009. After that it recovered and increased and peaked at 2013 and 2014.
+
+
+## Relationship between loan amount and terms.
+```{r echo=FALSE, warning=FALSE}
+
+ggplot(data = df) + 
+  geom_boxplot(aes(x = as.character(Term), y = LoanOriginalAmount)) +
+  ggtitle("Term vs Loan Original Amount") +
+  xlab("Term") +
+  ylab("Loan Original Amount")
+```
+```{r echo=FALSE, warning=FALSE} 
+by(df$LoanOriginalAmount, df$Term, summary)
+```
+
+The loan amonts are getting larger with longer terms. As we can see from the Table median and mean are increasing by longer terms.
+
+
+## Relationships between loan amount and the IncomeRange
+```{r echo=FALSE, warning=FALSE}
+df$IncomeRange = prosper_data$IncomeRange
+ggplot(aes(x = IncomeRange, y = LoanOriginalAmount), data=df) +
+    geom_boxplot() +
+  ggtitle("Income Range  vs Loan Amount") +
+  xlab("Income Range") +
+  theme(text = element_text(size=12), 
+        axis.text.x = element_text(angle=90, vjust=1)) +
+  ylab("Loan Original Amount")
 
 ```
+
+It is obvious from the box pots that larger loans on average are related to larger incomes.
+
+
+```{r echo=FALSE, warning=FALSE}
+df$MonthlyDebt <- prosper_data$DebtToIncomeRatio * prosper_data$StatedMonthlyIncome
+
+df$CurrentCreditLines <- prosper_data$CurrentCreditLines
+
+ggplot(aes(x = CurrentCreditLines, y = MonthlyDebt), 
+       data = subset(df, MonthlyDebt != 171000)) + 
+  geom_jitter(alpha = 1/10, shape = 20) +
+  geom_smooth(method = 'lm') +
+  xlim(0,60) +
+  ylim(0,8000) +
+  ggtitle("Monthly Debt vs Current Credit Lines") +
+  xlab("Monthly Debt") +
+  ylab("Current Credit Lines")
+
+```
+
+As we can see the amonth of debt is growing by increasing the number of credit lines.
+
+## Relationship between LoanOriginalAmount with ListingCategory.
+```{r echo=FALSE, warning=FALSE}
+ggplot( data = df) +
+  geom_boxplot(aes(x = ListingCategory, y = LoanOriginalAmount)) +
+  scale_y_continuous(limits = c(0, quantile(df$LoanOriginalAmount, 0.99, na.rm = TRUE))) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+If we look at the mean values we can see that the mean of Baby & Adoption and Dept Consolidation are the highest as opposed to Student and Vacation that are the minimums. 
+
+## Employment status and loan amount
+
+```{r echo=FALSE, warning=FALSE}
+ggplot(aes(x = EmploymentStatus, y = LoanOriginalAmount), data = df) +
+  geom_boxplot() +
+  scale_y_continuous(limits = c(0, quantile(df$LoanOriginalAmount, 0.99, na.rm = TRUE))) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+As we can see Employed people requested more loans. Interestingly, Not employed people wanted more loan than part-time employed people.
+
+```{r echo=FALSE, warning=FALSE}
+df$BankcardUtilization <- prosper_data$BankcardUtilization
+plot1 <- ggplot(aes(x = BankcardUtilization, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.005) +
+  stat_smooth(method = "lm")
+plot2 <- ggplot(aes(x = RevolvingCreditBalance, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.005) +
+  stat_smooth(method = "lm")
+plot3 <- ggplot(aes(x = DelinquenciesLast7Years, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.005) +
+  stat_smooth(method = "lm") 
+plot4 <- ggplot(aes(x = PublicRecordsLast10Years, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.005) +
+  stat_smooth(method = "lm")
+plot5 <- ggplot(aes(x = DaysWithCreditLine, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.005) +
+  stat_smooth(method = "lm")
+plot6 <- ggplot(aes(x = InquiriesLast6Months, y = BorrowerRate), data = df) +
+  geom_point(alpha = 0.005) +
+  stat_smooth(method = "lm")
+
+grid.arrange(plot1, plot2, plot3, plot4, plot5, plot6, nrow = 3, ncol = 2)
+```
+
+As BankcardUtilization, DeliquenciesLast7Years, PublicRecordsLast10Years and InquiriesLast6Months increaseswith the borrower rate,as opposed to RevolvingCreditBalance, whcih decreased. DaysWithCreditLine has no significant change with BorrowerRate.
+
+
+## Correlation between BorrowerRate with BankcardUtilization:
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$BorrowerRate, df$BankcardUtilization, use = "complete.obs")
+```
+## Correlation between BorrowerRate with RevolvingCreditBalance:
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$BorrowerRate, df$RevolvingCreditBalance, use = "complete.obs")
+```
+## Correlation between BorrowerRate with DelinquenciesLast7Years:
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$BorrowerRate, df$DelinquenciesLast7Years, use = "complete.obs")
+```
+## Correlation between BorrowerRate with PublicRecordsLast10Years:
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$BorrowerRate, df$PublicRecordsLast10Years, use = "complete.obs")
+```
+## Correlation between BorrowerRate with DaysWithCreditLine:
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$BorrowerRate, df$DaysWithCreditLine, use = "complete.obs")
+```
+## Correlation between BorrowerRate with InquiriesLast6Months:
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor(df$BorrowerRate, df$InquiriesLast6Months, use = "complete.obs")
+```
+
+None of that variebles has strong relatipnship with each other. The strongest relationship is between BorrowerRate with BankcardUtilization with 0.25. 
+
+
+##  Relation of Term and AnnualIncome
+```{r echo=FALSE, warning=FALSE}
+ggplot(aes(x = Term, y = AnnualIncome), data = df) +
+  geom_boxplot() +
+  scale_y_continuous(
+    limits = c(0, quantile(df$AnnualIncome, 0.99, na.rm = TRUE)))
+```
+```{r echo=FALSE, warning=FALSE}
+summary(subset(df, Term == 12)$AnnualIncome)
+summary(subset(df, Term == 36)$AnnualIncome)
+summary(subset(df, Term == 60)$AnnualIncome)
+```
+The median and mean for 12 months term are the highest between term of 12,36 and 60.
+
+
+## Relation betwen Term and DeptToIncomeRatito
+```{r echo=FALSE, warning=FALSE}
+df$DebtToIncomeRatio = prosper_data$DebtToIncomeRatio
+ggplot(aes(y = DebtToIncomeRatio, x = Term), data = df) +
+  geom_boxplot() +
+  scale_y_continuous(
+    limits = c(0, quantile(df$DebtToIncomeRatio, 0.99, na.rm = TRUE)))
+
+```
+
+```{r echo=FALSE, warning=FALSE}
+summary(subset(df, Term == 12)$DebtToIncomeRatio)
+summary(subset(df, Term == 36)$DebtToIncomeRatio)
+summary(subset(df, Term == 60)$DebtToIncomeRatio)
+```
+
+As we can see the median of the DebtToIncomeRatio increases as the terms goes up.
+
+
+## ProsperRating against BorrowerRate
+
+```{r echo=FALSE, warning=FALSE}
+ggplot(aes(x = ProsperRating, y = BorrowerRate), data = df) + 
+  geom_boxplot()
+```
+
+As we can see The better rating belongs to lower borrower rate. 
+
+```{r echo=FALSE, warning=FALSE}
+ggplot(aes(x = Term, y = BorrowerRate), data = df) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The median of 60 month term is the highest one, while the 12 month has the minimum one.
 
 # Bivariate Analysis
 
@@ -330,12 +526,17 @@ here. Use the questions below to guide your discussion.
 investigation. How did the feature(s) of interest vary with other features in \
 the dataset?
 
+The number of investors is increasing with higher prosper score, loan amount is bigger, borrowers have less existing prosper loans, estimated loss is lower. The mean loan amount vary trough years. The minimum mean in 2009 and 
+the maximum one is in 2013 and 2014. We also can see for instance the borrower rate increases as debt to income ratio increases. Moreover, we can see that with bigger amonth of loan the term is also longer.
+
 ### Did you observe any interesting relationships between the other features \
 (not the main feature(s) of interest)?
 
+I noticed that employed people are more likely to loan than others. Also the debt to income ratio for rating AA is the lowest one. 
+
 ### What was the strongest relationship you found?
 
-
+The strongest relationship that I found was between BorrowerRate with BankcardUtilization with value of 0.255482. 
 # Multivariate Plots Section
 
 > **Tip**: Now it's time to put everything together. Based on what you found in
