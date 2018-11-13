@@ -532,23 +532,107 @@ the maximum one is in 2013 and 2014. We also can see for instance the borrower r
 ### Did you observe any interesting relationships between the other features \
 (not the main feature(s) of interest)?
 
-I noticed that employed people are more likely to loan than others. Also the debt to income ratio for rating AA is the lowest one. 
+I noticed that employed people are more likely to loan than others. Also debt to income ratio for rating AA is the lowest one. 
 
 ### What was the strongest relationship you found?
 
 The strongest relationship that I found was between BorrowerRate with BankcardUtilization with value of 0.255482. 
+
 # Multivariate Plots Section
 
-> **Tip**: Now it's time to put everything together. Based on what you found in
-the bivariate plots section, create a few multivariate plots to investigate
-more complex interactions between variables. Make sure that the plots that you
-create here are justified by the plots you explored in the previous section. If
-you plan on creating any mathematical models, this is the section where you
-will do that.
-
-```{r echo=FALSE, Multivariate_Plots}
-
+## Borrower Rate vs Income Range vs Is Borrower Homeowner
+```{r echo=FALSE, warning=FALSE}
+df$IsBorrowerHomeowner <- prosper_data$IsBorrowerHomeowner
+ggplot(aes(x = as.factor(IncomeRange), y = BorrowerRate), 
+       data = subset(df, 
+                     IncomeRange != 'Not employed' & 
+                       IncomeRange != 'Not displayed'& 
+                       IncomeRange != '$0')) +
+  geom_boxplot(aes(fill = IsBorrowerHomeowner)) +
+  ggtitle("Income Range vs Borrower Rate (by Home Owner)") +
+  guides(fill = guide_legend(title = "Is Borrower Homeowner")) +
+  xlab("Income Range") +
+  ylab("Borrower Rate")  +
+   theme(text = element_text(size=12), 
+        axis.text.x = element_text(angle=90, vjust=1))
 ```
+As we can see borrowers with higher income, which are home owners have lower borrower rates. 
+
+
+## Relationship between Delinquencies and Employment Status
+```{r echo=FALSE, warning=FALSE}
+df$AmountDelinquent <- prosper_data$AmountDelinquent
+
+ggplot(aes(x = DelinquenciesLast7Years, y = AmountDelinquent),
+       data = filter(df, AmountDelinquent > 0 & 
+                            EmploymentStatus != "Other" )) +
+  geom_point() +
+  xlim(0, quantile(df$DelinquenciesLast7Years, 0.99, na.rm = T)) +
+  ylim(0, quantile(df$AmountDelinquent, 0.99, na.rm = T)) +
+  facet_wrap(~EmploymentStatus)+
+ggtitle('Relationship between Delinquencies and Employment Status')
+```
+From the above we can see relationship between the amount borrowers were delinquent and the number of delinquencies they've had over the last 7 years then separated that by employment status. Is obvious that Employed and Full time are the maximum. 
+
+## Relationshiop between Debt to Income 
+```{r echo=FALSE, warning=FALSE}
+ggplot(aes(x=DebtToIncomeRatio), data=subset(df,DebtToIncomeRatio<=1)) +
+    geom_density(aes(color = IncomeRange, 
+                     fill  = IncomeRange), 
+                 alpha = 0.5) +
+    xlim(0, quantile(df$DebtToIncomeRatio, 0.95, na.rm = T)) + 
+    ggtitle('Borrowers APR to Income Range') +
+    facet_wrap(~IncomeRange, ncol=2, 
+               scales = "free")
+```
+
+## Relationship between a lender yield on the loan and the number of investors with risk rating
+```{r echo=FALSE, warning=FALSE}
+df$TermInMonth <- as.factor(df$Term)
+df$LenderYield <- prosper_data$LenderYield
+rating <- c("HR", "E", "D", "C", "B", "A", "AA")
+ggplot(data = subset(df,ProsperRating %in% rating),
+       aes(x = LenderYield,
+           y = Investors,
+           colour =as.integer(ProsperRating), group = ProsperRating
+           )) +
+  geom_jitter(alpha = 0.5,
+              position = 'jitter') +
+  facet_wrap(~TermInMonth, ncol = 3) +
+   scale_color_gradient2(name = 'Prosper Rating',
+                       breaks = seq(1, 7, 1),
+                       labels = rating,
+                       limits = c(1, 7)) +
+  xlab("Lender yield") +
+  ylab("Number of Investor") +
+  ggtitle("Lender yield by Term and Categories")+
+  theme(legend.position = "right", 
+        legend.direction = "vertical",
+        legend.key.size = unit(1, "cm"))
+```
+
+This plot shows the relationship between a lender yield on the loan and the number of investors with the duration of the loan and the prosper rating.
+
+
+```{r echo=FALSE, warning=FALSE}
+df$BorrowerAPR <- prosper_data$BorrowerAPR
+ggplot(aes(x = DebtToIncomeRatio, y = BorrowerAPR,
+           color =as.integer(ProsperRating), group = ProsperRating), 
+       data = subset(df, !is.na(BorrowerAPR) & ProsperRating %in% rating)) +
+  geom_jitter() +
+  xlim(0, quantile(df$DebtToIncomeRatio, 0.995, na.rm = T)) +
+  scale_color_gradient2(high = "#FA4659", midpoint = 4, mid = "#FBB448",
+                       low = "#2EB872",
+                       breaks = seq(1, 7, 1),
+                       labels = rev(rating),
+                       limits = c(1, 7),
+                       name = 'Category of Risk') +
+   ggtitle('Borrowers APR to Debt To Income Ratio ') +
+  theme(legend.position = "right", 
+        legend.direction = "vertical",
+        legend.key.size = unit(1, "cm"))
+```
+Above plot describes the risk category based on to the particular loan.It displays the progression from a safe area, green color,  to a risky area,  red color,.
 
 # Multivariate Analysis
 
@@ -556,10 +640,16 @@ will do that.
 investigation. Were there features that strengthened each other in terms of \
 looking at your feature(s) of interest?
 
+Monthly income had positive and late payments has negative correlation with Rating. The number of investors is increasing when the prosper score is getting beter and loan amount is getting bigger too. Also we can see that higher loan amounts have longer term.
+
 ### Were there any interesting or surprising interactions between features?
+
+I've observed that employed people are more likely to borrow money.
 
 ### OPTIONAL: Did you create any models with your dataset? Discuss the \
 strengths and limitations of your model.
+
+No I did not. 
 
 ------
 
