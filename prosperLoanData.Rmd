@@ -34,8 +34,6 @@ names(prosper_data)
 # Creating new dataframe based on prosper data
 
 
-
-
 ```{r echo=FALSE}
 df <- prosper_data[, c("DelinquenciesLast7Years", "PublicRecordsLast10Years")]
 today <- Sys.Date()
@@ -84,6 +82,7 @@ summary(df)
 
 # Univariate Plots Section
 
+## Loan original amount
 ```{r echo=FALSE, warning=FALSE, Univariate_Plots}
 ggplot(data = df) +
   geom_histogram(aes(x = LoanOriginalAmount),binwidth=700) +
@@ -213,6 +212,7 @@ ggplot(data = df) +
 
 Most loans have 36 months terms
 
+## Borrower Rating
 ```{r echo=FALSE, warning=FALSE}
 ggplot(data = df, binwidth = 1) +
   geom_histogram(aes(x = BorrowerRate * 100))
@@ -236,7 +236,7 @@ ggplot( data = df) +
 
 2013 is the year that people borrowed money more than any other years and 2009 is the minimum borrowing year. There can be many resons behind that like economic crises or elections. 
 
-
+## Employment Duration of the borrowers
 ```{r echo=FALSE, warning=FALSE}
 df$EmploymentStatusDuration = prosper_data$EmploymentStatusDuration
 
@@ -250,6 +250,7 @@ ggplot(data = df) +
 
 With the increase of the length of employment there is a decreas in the number of people who borrow loans. 
 
+## Top 10 borrower states
 ```{r echo=FALSE, warning= FALSE}
 groupByBorrowerState <- group_by(prosper_data, BorrowerState)
 borrowersByState <- summarise(groupByBorrowerState, count = n())
@@ -311,6 +312,18 @@ I set ListingCreationYear variable as a factor so when I plotted it would look d
 
 # Bivariate Plots Section
 
+## Relationship between Prosper Rating and BorrowerAPR
+```{r echo=FALSE, warning=FALSE}
+df$BorrowerAPR = prosper_data$BorrowerAPR
+rating <- c("HR", "E", "D", "C", "B", "A", "AA")
+ggplot(aes(x = ProsperRating, y = BorrowerAPR * 100),
+      data = subset(df, !is.na(BorrowerAPR))) +
+  geom_boxplot(lwd = 0.75) + 
+  scale_x_discrete(limits = rating) 
+```
+
+As we can see biger APRs have higher risk.
+
 ## The relationship between Loan Original Amount and Number of 
 Investors
 
@@ -369,7 +382,7 @@ ggplot(aes(x = IncomeRange, y = LoanOriginalAmount), data=df) +
 
 It is obvious from the box pots that larger loans on average are related to larger incomes.
 
-
+## Relationship between monthly debt and current credit lines
 ```{r echo=FALSE, warning=FALSE}
 df$MonthlyDebt <- prosper_data$DebtToIncomeRatio * prosper_data$StatedMonthlyIncome
 
@@ -411,6 +424,7 @@ ggplot(aes(x = EmploymentStatus, y = LoanOriginalAmount), data = df) +
 
 As we can see Employed people requested more loans. Interestingly, Not employed people wanted more loan than part-time employed people.
 
+## Relationship of borrower rate and other variables.
 ```{r echo=FALSE, warning=FALSE}
 df$BankcardUtilization <- prosper_data$BankcardUtilization
 plot1 <- ggplot(aes(x = BankcardUtilization, y = BorrowerRate), data = df) +
@@ -509,6 +523,7 @@ ggplot(aes(x = ProsperRating, y = BorrowerRate), data = df) +
 
 As we can see The better rating belongs to lower borrower rate. 
 
+## Relationship of term and borrower rate
 ```{r echo=FALSE, warning=FALSE}
 ggplot(aes(x = Term, y = BorrowerRate), data = df) +
   geom_boxplot() +
@@ -613,7 +628,7 @@ ggplot(data = subset(df,ProsperRating %in% rating),
 
 This plot shows the relationship between a lender yield on the loan and the number of investors with the duration of the loan and the prosper rating.
 
-
+## Relationship between dept to income ratio and borrowerAPR with prosper rating
 ```{r echo=FALSE, warning=FALSE}
 df$BorrowerAPR <- prosper_data$BorrowerAPR
 ggplot(aes(x = DebtToIncomeRatio, y = BorrowerAPR,
@@ -621,13 +636,6 @@ ggplot(aes(x = DebtToIncomeRatio, y = BorrowerAPR,
        data = subset(df, !is.na(BorrowerAPR) & ProsperRating %in% rating)) +
   geom_jitter() +
   xlim(0, quantile(df$DebtToIncomeRatio, 0.995, na.rm = T)) +
-  scale_color_gradient2(high = "#FA4659", midpoint = 4, mid = "#FBB448",
-                       low = "#2EB872",
-                       breaks = seq(1, 7, 1),
-                       labels = rev(rating),
-                       limits = c(1, 7),
-                       name = 'Category of Risk') +
-   ggtitle('Borrowers APR to Debt To Income Ratio ') +
   theme(legend.position = "right", 
         legend.direction = "vertical",
         legend.key.size = unit(1, "cm"))
@@ -655,45 +663,68 @@ No I did not.
 
 # Final Plots and Summary
 
-> **Tip**: You've done a lot of exploration and have built up an understanding
-of the structure of and relationships between the variables in your dataset.
-Here, you will select three plots from all of your previous exploration to
-present here as a summary of some of your most interesting findings. Make sure
-that you have refined your selected plots for good titling, axis labels (with
-units), and good aesthetic choices (e.g. color, transparency). After each plot,
-make sure you justify why you chose each plot by describing what it shows.
 
 ### Plot One
-```{r echo=FALSE, Plot_One}
-
+```{r echo=FALSE,  warning=FALSE}
+ggplot(data = df) +
+  geom_bar(aes(x = ListingCategory), fill = 'orange', color = I("#506E86")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  xlab("Listing of Differenr Catagories")+
+  ylab("Number of Loan")+
+  ggtitle("Number of loans for different catagories")
 ```
 
 ### Description One
 
+As we can see largest number of the loans belongs to debt consolidation, about 60000 loans, while home improvement, business and other are at the next steps (Not Available is not considered). I choose this plot because I wanted to know in which areas people use prosper loan.
 
 ### Plot Two
-```{r echo=FALSE, Plot_Two}
-
+```{r echo=FALSE,  warning=FALSE}
+ggplot(aes(x = DebtToIncomeRatio, y = BorrowerAPR,
+           color =as.integer(ProsperRating), group = ProsperRating), 
+       data = subset(df, !is.na(BorrowerAPR) & ProsperRating %in% rating)) +
+  geom_jitter() +
+  geom_point(size = 1.1) + 
+  xlim(0, quantile(df$DebtToIncomeRatio, 0.995, na.rm = T)) +
+  scale_color_gradient2(high = "#FA4659", midpoint = 4, mid = "#FBB448",
+                       low = "#2EB872",
+                       breaks = seq(1, 7, 1),
+                       labels = rev(rating),
+                       limits = c(1, 7),
+                       name = 'Category of Risk') +
+  theme(legend.position = "right", 
+        legend.direction = "vertical",
+        legend.key.size = unit(1, "cm"))+ 
+ggtitle('Borrower APR and  Debt To Income Ratio')
 ```
 
 ### Description Two
 
+This scatter plot shows us the relationship between Dept to Income Ratio and BorrowerAPR and the colors illustrate the risky areas for the particular loan. The green color is the most safest zone and the red color is the most risky one. I also deleted outliers from this plot(0.05%). We can see that  APR is going up with the increase of rating risk. Also we can see that majority of people have debt-to-income ratios below 1.
 
 ### Plot Three
-```{r echo=FALSE, Plot_Three}
-
+```{r echo=FALSE, warning=FALSE}
+ggplot(aes(x = ProsperRating, y = BorrowerAPR * 100,
+           fill = I("#cd1045"), color = I("#a26c40")),
+      data = subset(df, !is.na(BorrowerAPR))) +
+  geom_boxplot(lwd = 0.75, outlier.colour = I("#FBB448"), outlier.shape = 1) + 
+  scale_x_discrete(limits = rating) +
+  ggtitle('Borrower APR and ProsperRating') +
+  ylab("Borrower APR")
 ```
 
 ### Description Three
 
-------
+The boxplots above show the relationship between borrower's Prosper rating and their assigned Annual Percentage Rate. As we can see lower APR has less risk thtan higher one. Moreover, we can see that the variation in APR goes down in safer zones.
 
 # Reflection
+Well I selected this project maninly because I did not know anything about loan, peosper loan, peer to peer lending business etc. and I wanted to learn something new. I spent a lot of time to learn about prosper loan and also spent even more time to understand each variable in the dataset. Also I was a little struggling with ggplot syntax and I checked Stackoverflow and Google alot during this project. :)
 
-> **Tip**: Here's the final step! Reflect on the exploration you performed and
-the insights you found. What were some of the struggles that you went through?
-What went well? What was surprising? Make sure you include an insight into
-future work that could be done with the dataset.
+Following are some of the interesting features which I observed during the exploratory analysis:
 
-> **Tip**: Don't forget to remove this, and the other **Tip** sections before
-saving your final work and knitting the final report!
+- Most of borrowers Income ranges from 25,000 - 74,999.
+- Most loans are taken for debt consolidation. 
+- There are 3 loan terms 12, 36 and 60 months and the most popular one is 36 month.
+- Borrower who home owner usually receive bigger loan than others.
+- The Borrower rate of Interest and Lender Yield is low for higher Credit Grades and high for lower Credit Grades. 
+- Employed person are more likley to take loan thatn others.
